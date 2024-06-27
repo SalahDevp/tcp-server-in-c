@@ -15,8 +15,6 @@ void recv_msg(int sockfd, char **buf, uint16_t *msg_ln);
 
 int main(int argc, char *argv[]) {
 
-  fd_set readfds;
-
   struct sockaddr_in sr_addr, cl_addr;
   unsigned int cl_len = 0;
   bzero(&sr_addr, sizeof(sr_addr));
@@ -29,11 +27,6 @@ int main(int argc, char *argv[]) {
   char *recv_buf = NULL;
   uint16_t recv_msg_ln = 0;
 
-  struct timeval tv;
-  // wait for 5 secs
-  tv.tv_sec = 5;
-  tv.tv_usec = 0;
-
   int server_sd = socket(AF_INET, SOCK_STREAM, 0);
   if (bind(server_sd, (struct sockaddr *)&sr_addr, sizeof(sr_addr)) < 0) {
     printf("error binding socket\n");
@@ -43,24 +36,27 @@ int main(int argc, char *argv[]) {
   listen(server_sd, MAX_PENDING_CONN);
   printf("server listening on port: %d\n", PORT);
 
+  // automatically clean child processes after they exit
+  signal(SIGCHLD, SIG_IGN);
+
   while (1) {
     int clsfd = accept(server_sd, (struct sockaddr *)&cl_addr, &cl_len);
-    if (clsfd < 0) {
-      printf("error on accept\n");
+    int pid = fork();
+
+    if (pid < 0) {
+      printf("error creating fork");
       exit(1);
+    } else if (pid == 0) { // only child process handles connection
+
+      if (clsfd < 0) {
+        printf("error on accept\n");
+        exit(1);
+      }
+
+      recv_msg(clsfd, &recv_buf, &recv_msg_ln);
+      printf("received message: %s\n", recv_buf);
+      exit(0);
     }
-
-    /* FD_ZERO(&readfds);
-
-    FD_SET(server_sd, &readfds);
-
-    select(server_sd + 1, &readfds, NULL, NULL, &tv); */
-
-    recv_msg(clsfd, &recv_buf, &recv_msg_ln);
-    printf("received message: %s\n", recv_buf);
-    /* if (FD_ISSET(server_sd, &readfds)) {
-    }
-    FD_CLR(server_sd, &readfds); */
   }
 
   return 0;

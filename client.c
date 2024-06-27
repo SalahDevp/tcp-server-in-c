@@ -13,6 +13,7 @@ const char SERVER_ADDRESS[] = "127.0.0.1";
 int main(int argc, char *argv[]) {
   int clsfd = socket(AF_INET, SOCK_STREAM, 0);
 
+  // set server address
   struct sockaddr_in srv_addr;
   bzero(&srv_addr, sizeof(srv_addr));
   srv_addr.sin_family = AF_INET;
@@ -22,6 +23,7 @@ int main(int argc, char *argv[]) {
   uint16_t msg_ln;
   char *buf = NULL;
 
+  // connect to server
   if (connect(clsfd, (struct sockaddr *)&srv_addr, sizeof(srv_addr)) < 0) {
     printf("error connecting to server\n");
     exit(1);
@@ -31,13 +33,16 @@ int main(int argc, char *argv[]) {
   scanf("%hu", &msg_ln);
   fflush(stdin);
 
+  // allocate message buffer
   int buf_size = msg_ln + sizeof(msg_ln);
   buf = (char *)malloc(buf_size + 1);
   if (buf == NULL) {
     printf("memory error\n");
     exit(1);
   }
+  // NOTE: message fromat : len+data
   *(uint16_t *)buf = msg_ln;
+
   printf("enter your message:\n");
   fgets(buf + sizeof(msg_ln), msg_ln + 1, stdin);
 
