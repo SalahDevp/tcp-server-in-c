@@ -55,7 +55,12 @@ int main(int argc, char *argv[]) {
 
       recv_msg(clsfd, &recv_buf, &recv_msg_ln);
       printf("received message: %s\n", recv_buf);
+      free(recv_buf);
+      close(clsfd);
+      close(server_sd);
       exit(0);
+    } else {
+      close(clsfd);
     }
   }
 
@@ -74,5 +79,5 @@ void recv_msg(int sockfd, char **buf, uint16_t *msg_ln) {
   }
 
   recv(sockfd, *buf, *msg_ln, 0);
-  *(buf + *msg_ln) = 0;
+  *buf[*msg_ln] = 0;
 }
