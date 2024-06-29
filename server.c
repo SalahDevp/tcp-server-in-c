@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
     int pid = fork();
 
     if (pid < 0) {
-      printf("error creating fork");
+      printf("error creating fork\n");
       exit(1);
     } else if (pid == 0) { // only child process handles connection
 
@@ -68,8 +68,9 @@ int main(int argc, char *argv[]) {
 }
 
 void recv_msg(int sockfd, char **buf, uint16_t *msg_ln) {
+  uint16_t received_ln = 0;
   // the first 2bytes are the msg length
-  recv(sockfd, msg_ln, sizeof(*msg_ln), 0);
+  read(sockfd, msg_ln, sizeof(*msg_ln));
 
   // allocate buffer to receive message
   *buf = (char *)malloc((*msg_ln) + 1);
@@ -78,6 +79,17 @@ void recv_msg(int sockfd, char **buf, uint16_t *msg_ln) {
     exit(1);
   }
 
-  recv(sockfd, *buf, *msg_ln, 0);
-  *buf[*msg_ln] = 0;
+  while (received_ln < *msg_ln) {
+    int r = read(sockfd, *buf + received_ln, *msg_ln - received_ln);
+    if (r < 0) {
+      printf("error reading message\n");
+      exit(1);
+    } else if (r == 0) {
+      break;
+    } else {
+      received_ln += r;
+    }
+  }
+  *msg_ln = received_ln;
+  (*buf)[*msg_ln] = 0;
 }

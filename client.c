@@ -32,28 +32,35 @@ int main(int argc, char *argv[]) {
   printf("enter the message length\n");
   scanf("%hu", &msg_ln);
   fflush(stdin);
+  // send length
+  write(clsfd, &msg_ln, sizeof(msg_ln));
 
   // allocate message buffer
-  int buf_size = msg_ln + sizeof(msg_ln);
-  buf = (char *)malloc(buf_size + 1);
+  buf = (char *)malloc(msg_ln + 1);
   if (buf == NULL) {
     printf("memory error\n");
     exit(1);
   }
-  // NOTE: message fromat : len+data
-  *(uint16_t *)buf = msg_ln;
 
-  printf("enter your message:\n");
-  fgets(buf + sizeof(msg_ln), msg_ln + 1, stdin);
-
-  // send msg to server
-  if (send(clsfd, buf, buf_size, 0) != buf_size) {
-    printf("couldn't send message\n");
-    exit(1);
+  int sent_ln = 0;
+  while (sent_ln < msg_ln) {
+    printf("enter your message:\n");
+    fgets(buf, msg_ln - sent_ln + 1, stdin);
+    int input_ln = strlen(buf);
+    // remove \n
+    if (buf[input_ln - 1] == '\n') {
+      buf[--input_ln] = '\0';
+    }
+    // send msg to server
+    if (write(clsfd, buf, input_ln) != input_ln) {
+      printf("couldn't send message\n");
+      exit(1);
+    }
+    printf("message: %s sent successfuly to %s:%d\n", buf, SERVER_ADDRESS,
+           SERVER_PORT);
+    sent_ln += input_ln;
   }
 
-  printf("message: %s sent successfuly to %s:%d\n", buf + sizeof(msg_ln),
-         SERVER_ADDRESS, SERVER_PORT);
   close(clsfd);
   return 0;
 }
